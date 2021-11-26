@@ -1,0 +1,69 @@
+#PDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
+# SPDX-License-Identifier: MIT
+
+import time
+import board
+import math
+from adafruit_icm20x import ICM20948, MagDataRate
+
+cycles = 5
+i2c = board.I2C()  # uses board.SCL and board.SDA
+icm = ICM20948(i2c)
+
+#complimentary constant
+alpha = 0.10
+#gravity
+g_earth = 9.8
+
+#initlize values
+roll = 0
+pitch = 0
+phiHat_rad = 0
+thetaHat_rad = 0
+
+# Cycle between two data rates
+# Best viewed in the Mu serial plotter where you can see how
+# the data rate affects the resolution of the data
+icm.gyro_data_rate_divisor = 0  # minimum
+icm.accelerometer_data_rate_divisor = 0  # minimum
+icm.magnetometer_data_rate = MagDataRate.RATE_100HZ
+
+while True:
+	
+	gx, gy, gz = icm.gyro #p, q, r
+	ax, ay, az = icm.acceleration
+	mx, my, mz = icm.magnetic
+	
+	#get filtered angles using accelerometer data
+	phiHat_acc_rad = float(math.atan(ay/az))
+	thetaHat_acc_rad = float(math.atan(ax/g_earth))
+	
+	#Transform body rates to Eurler rates
+	phiDot_rps = gx+float(math.tan(thetaHat_rad))*(float(math.sin(phiHat_rad))*gy+float(math.cos(phiHat_rad))*gz)
+	thetaDot_rps = float(math.cos(phiHat_rad)) * gy - float(math.sin(phiHat_rad)) * gz
+	
+	phiHat_rad = alpha *  phiHat_acc_rad  + float(1.0 - alpha) * (phiHat_rad + float(8/1000)*phiDot_rps)
+	thetaHat_rad = alpha * thetaHat_acc_rad + float(1.0 - alpha) * (thetaHat_rad + float(8/1000)*thetaDot_rps)
+	roll = math.degrees(phiHat_rad)
+	pitch = math.degrees(thetaHat_rad)
+	time.sleep(.001)
+	
+	print("""
+Gyro:  {:05.2f} {:05.2f} {:05.2f}
+Accel: {:05.2f} {:05.2f} {:05.2f}
+Mag:   {:05.2f} {:05.2f} {:05.2f}
+Roll: {:05.2f}
+Pitch: {:05.2f}\n\n
+		""".format(gx, gy, gz, ax, ay, az, mx, my, mz, roll, pitch)
+		)
+
+#    print("Data Rate:", icm.gyro_data_rate)
+#     time.sleep(2)
+#     for i in range(cycles):
+	
+
+#     icm.gyro_data_rate_divisor = 255  # maximum
+#     print("Data Rate:", icm.gyro_data_rate)
+#     time.sleep(2)
+#     for i in range(cycles):
+#         print(icm.gyro)
