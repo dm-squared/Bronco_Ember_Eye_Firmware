@@ -29,33 +29,42 @@ icm.accelerometer_data_rate_divisor = 0  # minimum
 icm.magnetometer_data_rate = MagDataRate.RATE_100HZ
 
 while True:
+
+	# Divide by 0 flag
+	zero_div_flag = False
 	
-	gx, gy, gz = icm.gyro #p, q, r
+	# Sensor value variables
+	gx, gy, gz = icm.gyro #p (pitch), q (yaw), r (roll)
 	ax, ay, az = icm.acceleration
 	mx, my, mz = icm.magnetic
 	
 	#get filtered angles using accelerometer data
-	phiHat_acc_rad = float(math.atan(ay/az))
-	thetaHat_acc_rad = float(math.atan(ax/g_earth))
+	try:
+		phiHat_acc_rad = float(math.atan(ay/az))
+		thetaHat_acc_rad = float(math.atan(ax/g_earth))
+	except ZeroDivisionError:
+		zero_div_flag = True
 	
-	#Transform body rates to Eurler rates
-	phiDot_rps = gx+float(math.tan(thetaHat_rad))*(float(math.sin(phiHat_rad))*gy+float(math.cos(phiHat_rad))*gz)
-	thetaDot_rps = float(math.cos(phiHat_rad)) * gy - float(math.sin(phiHat_rad)) * gz
-	
-	phiHat_rad = alpha *  phiHat_acc_rad  + float(1.0 - alpha) * (phiHat_rad + float(8/1000)*phiDot_rps)
-	thetaHat_rad = alpha * thetaHat_acc_rad + float(1.0 - alpha) * (thetaHat_rad + float(8/1000)*thetaDot_rps)
-	roll = math.degrees(phiHat_rad)
-	pitch = math.degrees(thetaHat_rad)
-	time.sleep(.001)
-	
-	print("""
+	# Make sure not divide by 0
+	if not zero_div_flag:
+		#Transform body rates to Eurler rates
+		phiDot_rps = gx+float(math.tan(thetaHat_rad))*(float(math.sin(phiHat_rad))*gy+float(math.cos(phiHat_rad))*gz)
+		thetaDot_rps = float(math.cos(phiHat_rad)) * gy - float(math.sin(phiHat_rad)) * gz
+
+		phiHat_rad = alpha *  phiHat_acc_rad  + float(1.0 - alpha) * (phiHat_rad + float(8/1000)*phiDot_rps)
+		thetaHat_rad = alpha * thetaHat_acc_rad + float(1.0 - alpha) * (thetaHat_rad + float(8/1000)*thetaDot_rps)
+		roll = math.degrees(phiHat_rad)
+		pitch = math.degrees(thetaHat_rad)
+		time.sleep(.001)
+
+		print("""
 Gyro:  {:05.2f} {:05.2f} {:05.2f}
 Accel: {:05.2f} {:05.2f} {:05.2f}
 Mag:   {:05.2f} {:05.2f} {:05.2f}
 Roll: {:05.2f}
 Pitch: {:05.2f}\n\n
 		""".format(gx, gy, gz, ax, ay, az, mx, my, mz, roll, pitch)
-		)
+			)
 
 #    print("Data Rate:", icm.gyro_data_rate)
 #     time.sleep(2)
