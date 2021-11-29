@@ -18,6 +18,9 @@ g_earth = 9.8
 #initlize values
 roll = 0
 pitch = 0
+yaw = 0
+mag_x = 0
+mag_y = 0
 phiHat_rad = 0
 thetaHat_rad = 0
 
@@ -55,15 +58,19 @@ while True:
 		thetaHat_rad = alpha * thetaHat_acc_rad + float(1.0 - alpha) * (thetaHat_rad + float(8/1000)*thetaDot_rps)
 		roll = math.degrees(phiHat_rad)
 		pitch = math.degrees(thetaHat_rad)
-		time.sleep(.001)
+		mag_x = mx*math.cos(pitch)+ my*math.sin(roll)*math.sin(pitch) + mz*math.cos(roll)*math.sin(pitch)
+		mag_y = (my*math.cos(roll)) - (mz*math.sin(roll))
+		yaw = 180 * math.atan2(-mag_y, mag_x)/(math.pi)
+		time.sleep(.005)
 
 		print("""
 Gyro:  {:05.2f} {:05.2f} {:05.2f}
 Accel: {:05.2f} {:05.2f} {:05.2f}
 Mag:   {:05.2f} {:05.2f} {:05.2f}
-Roll: {:05.2f}
-Pitch: {:05.2f}\n\n
-		""".format(gx, gy, gz, ax, ay, az, mx, my, mz, roll, pitch)
+Roll:  {:05.2f}
+Pitch: {:05.2f}
+Yaw:   {:05.2f}\n\n
+		""".format(gx, gy, gz, ax, ay, az, mx, my, mz, roll, pitch, yaw)
 			)
 
 #    print("Data Rate:", icm.gyro_data_rate)
